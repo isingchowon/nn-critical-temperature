@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the thesis below."
+title: "nn-critical-temperature"
+authors:
+  - family-names: Lee
+    given-names: Chowon
+    affiliation: "Department of Physics, Hanyang University"
+repository-code: "https://github.com/isingchowon/nn-critical-temperature"
+license: MIT
+preferred-citation:
+  type: thesis
+  thesis-type: "Bachelor's thesis"
+  title: "Finite-Size Scaling of Neural-Network Classifier Outputs: Critical Temperatures of the 3D Ising Model and the Sherrington-Kirkpatrick Spin Glass"
+  authors:
+    - family-names: Lee
+      given-names: Chowon
+  institution:
+    name: "Hanyang University"
+  year: 2027
