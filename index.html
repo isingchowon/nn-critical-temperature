@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can a Neural Network Measure a Critical Temperature?</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%230e4a84%27/%3E%3Cpath d=%27M5 20c4 0 4-9 8-9s4 9 8 9 4-9 6-9%27 stroke=%27white%27 stroke-width=%272.6%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive companion to a Bachelor's thesis (Hanyang University): finite-size scaling of neural-network classifier outputs for the 3D Ising model and the Sherrington–Kirkpatrick spin glass.">
+<style>
+:root{
+  --bg:#f7f9fc; --card:#ffffff; --ink:#1b2430; --muted:#5b6777; --rule:#dbe3ee;
+  --blue:#0e4a84; --works:#2a78d6; --fails:#eb6834; --tint:#eef3f9; --up:#0e4a84; --down:#e8eef6; --hl:#eb6834;
+  --shadow:0 1px 2px rgba(20,40,70,.06),0 6px 24px rgba(20,40,70,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1620; --card:#161f2b; --ink:#e7edf5; --muted:#9aa8ba; --rule:#26334a;
+    --blue:#7db4ee; --works:#5aa2ff; --fails:#ff8a5c; --tint:#1a2535; --up:#7db4ee; --down:#1d2938; --hl:#ff8a5c;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1620; --card:#161f2b; --ink:#e7edf5; --muted:#9aa8ba; --rule:#26334a;
+  --blue:#7db4ee; --works:#5aa2ff; --fails:#ff8a5c; --tint:#1a2535; --up:#7db4ee; --down:#1d2938; --hl:#ff8a5c;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+a{color:var(--blue)}
+header.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+header.top .wrap{display:flex;align-items:center;gap:18px;height:52px;overflow-x:auto;white-space:nowrap}
+header.top b{color:var(--blue);font-size:14px;letter-spacing:.04em;text-transform:uppercase}
+header.top a{font-size:14px;color:var(--muted);text-decoration:none}
+header.top a:hover{color:var(--blue)}
+header.top .sp{flex:1}
+.theme{border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;font:13px system-ui;cursor:pointer}
+.hero{padding:56px 0 28px}
+.eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);font-weight:600}
+h1{font-size:clamp(34px,6vw,60px);line-height:1.08;margin:.25em 0 .35em;color:var(--blue);letter-spacing:-.02em}
+.sub{font-size:clamp(17px,2.2vw,21px);color:var(--muted);max-width:760px;margin:0 0 6px}
+.by{font-size:15px;color:var(--muted)}
+.qa{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:28px 0 8px}
+.qa>div{background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
+.qa h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--blue)}
+.qa p{margin:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 0}
+.stat{background:var(--tint);border-radius:14px;padding:14px 16px}
+.stat .n{font-size:clamp(22px,3.2vw,30px);font-weight:700;color:var(--blue);line-height:1.1}
+.stat .l{font-size:13.5px;color:var(--muted);margin-top:4px;line-height:1.35}
+section{padding:46px 0 10px}
+h2{font-size:clamp(24px,3.6vw,34px);margin:0 0 6px;letter-spacing:-.01em}
+h2 .num{color:var(--blue);margin-right:.4em}
+.lede{color:var(--muted);max-width:780px;margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:12px 0}
+.controls label{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+select,button.b{font:14px system-ui;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 12px;cursor:pointer}
+button.b.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+:root[data-theme="dark"] button.b.primary{color:#0b1320}
+button.b:disabled{opacity:.5;cursor:default}
+input[type=range]{width:min(280px,46vw);min-width:0;accent-color:var(--blue)}
+.tbl{overflow-x:auto}
+.readout{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink)}
+canvas{display:block;width:100%;border-radius:10px;background:var(--card)}
+#lat{aspect-ratio:1;image-rendering:pixelated;background:var(--down)}
+#trace{height:90px;margin-top:10px}
+#plot{aspect-ratio:16/10}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.seg button{font:14px system-ui;border:0;background:var(--card);color:var(--ink);padding:7px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button.on{background:var(--blue);color:#fff}
+:root[data-theme="dark"] .seg button.on{color:#0b1320}
+.note{font-size:14px;color:var(--muted)}
+.res{font-size:15px;margin-top:10px}
+.res table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.res td,.res th{padding:5px 8px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+@media (max-width:820px){.res{font-size:13.5px}.res td,.res th{padding:5px 5px}.controls label{flex-wrap:wrap}}
+.res th{color:var(--muted);font-weight:600;font-size:13px}
+.good{color:var(--works);font-weight:600}.bad{color:var(--fails);font-weight:600}
+figure{margin:0}
+figure img{width:100%;height:auto;display:block;border-radius:10px;background:#fff}
+figcaption{font-size:14px;color:var(--muted);margin-top:8px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;margin-bottom:8px;color:#fff}
+.tag.f{background:var(--fails)}.tag.w{background:var(--works)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:6px 0 0}
+.step{background:var(--tint);border-radius:14px;padding:14px 16px}
+.step b{color:var(--blue)}
+.step .k{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+details{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:12px 16px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em}
+.eq{background:var(--tint);border-radius:10px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:normal;overflow-wrap:anywhere;line-height:1.7}
+.grid2>*,.steps>*,.qa>*,.card{min-width:0}
+.dots svg{width:100%;height:auto;display:block}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}
+.links a{display:inline-block;border:1px solid var(--rule);background:var(--card);padding:9px 16px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px}
+.links a.p{background:var(--blue);border-color:var(--blue);color:#fff}
+:root[data-theme="dark"] .links a.p{color:#0b1320}
+footer{padding:40px 0 60px;color:var(--muted);font-size:14px}
+@media (max-width:820px){
+  .qa,.grid2,.steps{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .hero{padding-top:36px}
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <b>Hanyang University · Physics</b>
+  <a href="#watch">Watch</a><a href="#measure">Measure</a><a href="#networks">Networks</a><a href="#glass">Spin glass</a><a href="#numbers">Numbers</a><a href="#links">Code</a>
+  <span class="sp"></span>
+  <button class="theme" id="themeBtn" aria-label="Toggle light/dark">Light / dark</button>
+</div></header>
+
+<main class="wrap">
+<div class="hero">
+  <div class="eyebrow">Bachelor's thesis · Department of Physics</div>
+  <h1>Can a Neural Network<br>Measure a Critical Temperature?</h1>
+  <p class="sub">Finite-size scaling of neural-network classifier outputs: critical temperatures of the 3D Ising model and the Sherrington–Kirkpatrick spin glass.</p>
+  <div class="by"><b>Chowon Lee</b> · Advisor: Prof. Park Moon Jip · Hanyang University</div>
+
+  <div class="qa">
+    <div><h3>The question</h3><p>Neural networks are often used to locate phase transitions. They are trained on clearly ordered and clearly disordered samples, and the temperature where the output is ½ is taken as the critical temperature T<sub>c</sub>. But ½ only marks where the network is undecided. <b>Is that a measurement of T<sub>c</sub>, or an artefact of the training?</b></p></div>
+    <div><h3>The answer</h3><p>It is a measurement only if the network sees a quantity that <i>looks the same at T<sub>c</sub> for every system size</i>. Then T<sub>c</sub> is where the output curves for different sizes <b>cross</b>, whatever the network learned. Tested on the 3D Ising model (within 0.01 of T<sub>c</sub>) and on a spin glass (within 0.05).</p></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n">4.521(7)</div><div class="l">T<sub>c</sub> from the scale-invariant CNN, sizes (16, 20). True value 4.5115.</div></div>
+    <div class="stat"><div class="n">1.6–2.6 % low</div><div class="l">T<sub>c</sub> from ordinary CNNs on raw spins, read at P = ½.</div></div>
+    <div class="stat"><div class="n">± 0.05</div><div class="l">spin-glass T<sub>c</sub> = 1, from the replica-overlap input (up to N = 256).</div></div>
+    <div class="stat"><div class="n">≈ same</div><div class="l">as the standard finite-size scaling estimate: the network matches it but does not beat it.</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ 1 WATCH -->
+<section id="watch">
+  <h2><span class="num">01</span>Watch a magnet near its critical point</h2>
+  <p class="lede">A 3D Ising magnet: each cell is a spin pointing up (dark) or down (light). This is a live Monte Carlo simulation running in your browser, shown as one slice through the cube. Drag the temperature through T<sub>c</sub> = 4.5115 and watch the order appear and vanish.</p>
+  <div class="card">
+    <div class="grid2">
+      <div>
+        <canvas id="lat" width="24" height="24" aria-label="Ising lattice slice"></canvas>
+        <canvas id="trace" width="600" height="90" aria-label="Magnetization over time"></canvas>
+      </div>
+      <div>
+        <div class="controls">
+          <label>Temperature <input id="T" type="range" min="3.6" max="5.6" step="0.01" value="4.51"> <b id="Tval" class="mono">4.51</b></label>
+        </div>
+        <div class="controls">
+          <label>Algorithm
+            <select id="algo"><option value="wolff">Wolff clusters</option><option value="metro">Metropolis (single spin)</option></select></label>
+          <label>Size L
+            <select id="Lsel"><option>12</option><option selected>16</option><option>24</option></select></label>
+        </div>
+        <div class="controls">
+          <button class="b primary" id="play">Pause</button>
+          <button class="b" id="cold">Start ordered</button>
+          <button class="b" id="hot">Start random</button>
+        </div>
+        <div class="readout">
+          <span>|m| = <b id="rm">–</b></span><span>energy/spin = <b id="re">–</b></span><span>last cluster = <b id="rc">–</b></span>
+        </div>
+        <p class="note" style="margin-top:12px">Orange-tinted cells belong to the cluster flipped in the last Wolff step (spins are shown relative to the majority direction). Near T<sub>c</sub> the clusters are huge and span the whole box: the system has no typical length scale. Single-spin Metropolis updates struggle there (critical slowing down), which is why the thesis uses Wolff cluster moves for the Ising data.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2 MEASURE -->
+<section id="measure">
+  <h2><span class="num">02</span>Find T<sub>c</sub> yourself: where the curves cross</h2>
+  <p class="lede">Near T<sub>c</sub> an observable depends on temperature and system size only through <span class="mono">(T−T<sub>c</sub>)·L<sup>1/ν</sup></span>. So a <i>suitably rescaled</i> quantity gives curves for different sizes that all pass through one point, at T<sub>c</sub>. Run a fresh simulation for three lattice sizes and see for yourself.</p>
+  <div class="card">
+    <div class="controls">
+      <label>Samples per point
+        <select id="nm"><option value="400">400 (fast)</option><option value="1500" selected>1500</option><option value="5000">5000 (slow, smoother)</option></select></label>
+      <button class="b primary" id="run">Run simulation (L = 6, 8, 12)</button>
+      <span class="note" id="prog"></span>
+    </div>
+    <div class="controls">
+      <span class="note">Quantity:</span>
+      <span class="seg" id="obs">
+        <button data-o="raw">⟨|m|⟩ (raw)</button>
+        <button data-o="resc" class="on">⟨|m|⟩·L<sup>β/ν</sup> (rescaled)</button>
+        <button data-o="binder">Binder cumulant U₄</button>
+      </span>
+    </div>
+    <canvas id="plot" width="900" height="560" aria-label="Observable versus temperature for three sizes"></canvas>
+    <div class="controls">
+      <label>Decision level <input id="lvl" type="range" min="0" max="100" value="50"> <b id="lvlv" class="mono"></b></label>
+      <span class="note">Dots mark where each curve reaches this level, like reading P = ½ from a classifier.</span>
+    </div>
+    <div class="res" id="res"></div>
+  </div>
+  <div class="steps" style="margin-top:16px">
+    <div class="step"><div class="k">Level crossing (the usual way)</div>Read T where the output reaches a fixed level. The answer changes with the level you pick (<b>drag the slider</b>) and drifts with system size.</div>
+    <div class="step"><div class="k">Size crossing (this thesis)</div>Read T where curves of <b>different sizes meet</b>. For a rescaled quantity this is T<sub>c</sub> and does not depend on any level.</div>
+    <div class="step"><div class="k">Why it matters for networks</div>A classifier output P(T,L) plays the role of the quantity above. Whether it behaves like the rescaled curves is decided by <b>what the network is shown</b>.</div>
+  </div>
+  <p class="note">Honest caveat: these are small lattices, so crossings sit a little away from T<sub>c</sub> (corrections to scaling), and the plot is noisy at low sample counts. The thesis uses L = 8–20 and averages over five training runs.</p>
+</section>
+
+<!-- ============================================================ 3 NETWORKS -->
+<section id="networks">
+  <h2><span class="num">03</span>The same data, two networks, two answers</h2>
+  <p class="lede">Both networks are trained on the same simulated Ising configurations, labelled ordered (far below T<sub>c</sub>) or disordered (far above). They never see the region around T<sub>c</sub>. <b>Only the input differs.</b></p>
+  <div class="grid2">
+    <div class="card"><span class="tag f">Standard CNN on raw spins</span>
+      <figure><img src="assets/fig-raw.png" alt="Output curves of a standard CNN for sizes 8 to 20: no common crossing" loading="lazy">
+      <figcaption>The curves for different sizes do not meet at one point. Reading P = ½ at L = 20 gives 4.40, about 2.5 % too low.</figcaption></figure></div>
+    <div class="card"><span class="tag w">Scale-invariant CNN</span>
+      <figure><img src="assets/fig-scaleinv.png" alt="Output curves of the scale-invariant CNN: all sizes cross at T_c" loading="lazy">
+      <figcaption>All sizes cross in one point, 4.521(7) for sizes (16, 20), within 0.01 of the true T<sub>c</sub> = 4.5115.</figcaption></figure></div>
+  </div>
+  <div class="grid2" style="margin-top:18px">
+    <div class="card">
+      <h3 style="margin:0 0 6px">How the scale-invariant network works</h3>
+      <p style="margin:0 0 8px">A bias-free convolution with tanh gives a local field φ<sub>x</sub>. Averaging it gives <b>one number</b> M that flips sign when all spins flip, like the magnetization. Only |M|·L<sup>β/ν</sup> (β/ν = 0.518) reaches the final classifier.</p>
+      <div class="eq mono">φ<sub>x</sub> = Σ<sub>c</sub> w<sub>c</sub> tanh( Σ<sub>u</sub> W<sub>c,u</sub> σ<sub>x+u</sub> ),&nbsp; M = (1/N) Σ<sub>x</sub> φ<sub>x</sub>,&nbsp; M[−σ] = −M[σ]</div>
+      <p class="note" style="margin:0">Because that input has the same distribution for every size at T<sub>c</sub>, the output curves must coincide there, whatever the classifier learned. The thesis tests this rather than assuming it.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 6px">Three different training windows</h3>
+      <p style="margin:0 0 8px">Windows A, B and C place the training temperatures differently on purpose. For the scale-invariant network the window moves the <i>height</i> where curves meet (0.30, 0.17, 0.48) but not the <i>temperature</i> (4.521, 4.518, 4.520).</p>
+      <p class="note" style="margin:0">A physical estimate must not depend on a choice like that. Ordinary CNNs fail this test: their estimates change with the window by 0.04 to 0.21.</p>
+    </div>
+  </div>
+  <figure class="card" style="margin-top:18px"><img src="assets/fig-windows.png" alt="Scale-invariant CNN output for training windows A, B and C" loading="lazy">
+    <figcaption>Scale-invariant CNN, training windows A, B, C. Lines are means over five training runs, bands the range. Dashed line: T<sub>c</sub>.</figcaption></figure>
+</section>
+
+<!-- ============================================================ 4 GLASS -->
+<section id="glass">
+  <h2><span class="num">04</span>A harder case: a spin glass</h2>
+  <p class="lede">In the Sherrington–Kirkpatrick spin glass every pair of spins is coupled with a random sign, so there is no magnetization to look at. Its critical temperature is known exactly (T<sub>c</sub> = 1), which makes it a clean test.</p>
+  <div class="steps">
+    <div class="step"><div class="k">1 · Spins alone</div>By an exact gauge symmetry every configuration is equally likely at every temperature. A network that sees only spins scores <b>48–51 %: chance</b>.</div>
+    <div class="step"><div class="k">2 · One copy + couplings</div>The network can compute the energy, which changes smoothly with T, so it works as a <b>thermometer</b>: its apparent transition ranges from 0.92 to 1.32 depending on the window.</div>
+    <div class="step"><div class="k">3 · Two copies: the overlap</div>The overlap q = (1/N) Σ σᵃσᵇ plays the role of the magnetization. Given |q|·N<sup>1/3</sup> the curves cross at T<sub>c</sub> within about 0.05.</div>
+  </div>
+  <div class="grid2" style="margin-top:18px">
+    <figure class="card"><img src="assets/fig-sk.png" alt="Network output for the SK model: overlap only versus single replica with couplings" loading="lazy">
+      <figcaption>Left: overlap input, sizes N = 32 to 256 cross at T<sub>c</sub> = 1. Right: one copy plus couplings; the network measures the temperature, not the transition.</figcaption></figure>
+    <figure class="card"><img src="assets/fig-skdots.png" alt="Estimated critical temperature for each network and window" loading="lazy">
+      <figcaption>Estimated T<sub>c</sub> for each setup and training window. Adding learned graph-network features to the overlap breaks the guarantee, because those features are not scale-invariant at T<sub>c</sub>.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ============================================================ 5 NUMBERS -->
+<section id="numbers">
+  <h2><span class="num">05</span>The numbers</h2>
+  <p class="lede">Extrapolated estimates T<sub>∞</sub> of the critical temperature (mean over five training runs; bars are the combined run-to-run and bootstrap uncertainty), from the thesis tables.</p>
+  <div class="grid2">
+    <div class="card dots"><h3 style="margin:0 0 4px">3D Ising model · true T<sub>c</sub> = 4.5115</h3><div id="dotIsing"></div></div>
+    <div class="card dots"><h3 style="margin:0 0 4px">SK spin glass · exact T<sub>c</sub> = 1</h3><div id="dotSK"></div></div>
+  </div>
+  <div class="card res tbl" style="margin-top:18px">
+    <table>
+      <tr><th>3D Ising, size crossing (16, 20)</th><th>Win. A</th><th>Win. B</th><th>Win. C</th></tr>
+      <tr><td>Scale-invariant CNN</td><td class="good">4.521(7)</td><td class="good">4.518(7)</td><td class="good">4.520(8)</td></tr>
+      <tr><td>Binder cumulant (no ML)</td><td colspan="3">4.522(5)</td></tr>
+      <tr><td>⟨|m|⟩·L<sup>β/ν</sup> (no ML)</td><td colspan="3">4.521(4)</td></tr>
+      <tr><td>Per-size CNN, level crossing P = ½ (extrapolated)</td><td class="bad">4.395(19)</td><td class="bad">4.415(24)</td><td class="bad">4.438(7)</td></tr>
+    </table>
+  </div>
+  <details><summary>What the network does and does not contribute</summary>
+    <p>Once the input is a scaling quantity, the crossing temperature is fixed by the data, and the learned function only sets the height where curves meet. In both models the network reproduced the conventional estimator without improving on it, and the exponent (β/ν = 0.518 for the Ising model, 1/3 for SK) has to be supplied. With a deliberately wrong β/ν = 0.1 the Ising estimate moves by about 2 % and the window dependence returns.</p>
+    <p class="note">Limitations: small lattices (L ≤ 20, N ≤ 256), one data set per model, corrections to scaling seen as a drift but not fitted. Natural next steps: determine the exponent from the data, and the 3D Edwards–Anderson model.</p>
+  </details>
+  <details><summary>Methods in brief</summary>
+    <p><b>Ising data:</b> Metropolis sweep + 5 Wolff cluster flips per step, L = 8, 12, 16, 20, 1000 configurations per temperature. <b>SK data:</b> parallel tempering (replica exchange) with two replica ladders per disorder sample, N = 32–256; equilibration checked with the exact energy–overlap identity. <b>Networks:</b> 3D CNNs with periodic padding and global average pooling (one network handles all sizes); for SK a message-passing GNN on the complete graph with the couplings as edge weights, feeding an LSTM over 16 snapshots. <b>Training:</b> binary cross-entropy, Adam, PyTorch; five seeds and three training windows per network; uncertainties combine bootstrap and run-to-run spread.</p>
+  </details>
+</section>
+
+<section id="links">
+  <h2><span class="num">06</span>Code, poster and contact</h2>
+  <div class="links">
+    <a class="p" href="https://github.com/isingchowon/nn-critical-temperature">Code on GitHub</a>
+    <a href="assets/poster.pdf">Poster (PDF)</a>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap">
+  Chowon Lee · Department of Physics, Hanyang University · Bachelor's thesis, advisor Prof. Park Moon Jip · February 2027.<br>
+  The simulations on this page run live in your browser; the network figures and numbers are from the thesis.
+</div></footer>
+
+<script>
+(function(){
+"use strict";
+const TC=4.5115, BETA_NU=0.518;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ------------------------------------------------ theme */
+const root=document.documentElement;
+try{const t=localStorage.getItem('theme'); if(t) root.dataset.theme=t;}catch(e){}
+document.getElementById('themeBtn').onclick=()=>{
+  const dark=(root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches);
+  root.dataset.theme=dark?'light':'dark';
+  try{localStorage.setItem('theme',root.dataset.theme)}catch(e){}
+  redrawAll();
+};
+
+/* ------------------------------------------------ RNG + 3D Ising */
+function rng(seed){let a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+class Ising3D{
+  constructor(L,seed){
+    this.L=L;const N=this.N=L*L*L;this.s=new Int8Array(N).fill(1);this.nb=new Int32Array(N*6);
+    this.stack=new Int32Array(N);this.flipped=new Int32Array(N);this.nflip=0;this.rand=rng(seed||12345);
+    const w=(v)=>(v+L)%L;
+    for(let z=0;z<L;z++)for(let y=0;y<L;y++)for(let x=0;x<L;x++){
+      const i=x+L*(y+L*z),b=i*6;
+      this.nb[b]=w(x+1)+L*(y+L*z);this.nb[b+1]=w(x-1)+L*(y+L*z);
+      this.nb[b+2]=x+L*(w(y+1)+L*z);this.nb[b+3]=x+L*(w(y-1)+L*z);
+      this.nb[b+4]=x+L*(y+L*w(z+1));this.nb[b+5]=x+L*(y+L*w(z-1));
+    }
+  }
+  randomize(){for(let i=0;i<this.N;i++)this.s[i]=this.rand()<0.5?-1:1}
+  order(){this.s.fill(1)}
+  wolff(T){
+    const {s,nb,stack,flipped,rand,N}=this;const p=1-Math.exp(-2/T);
+    const seed=(rand()*N)|0,sp=s[seed];let top=1,n=0;stack[0]=seed;s[seed]=-sp;flipped[n++]=seed;
+    while(top>0){const i=stack[--top],b=i*6;
+      for(let k=0;k<6;k++){const j=nb[b+k];if(s[j]===sp&&rand()<p){s[j]=-sp;stack[top++]=j;flipped[n++]=j}}}
+    this.nflip=n;return n;
+  }
+  sweepWolff(T){let t=0;while(t<this.N)t+=this.wolff(T)}
+  metro(T){
+    const {s,nb,rand,N}=this;this.nflip=0;
+    for(let n=0;n<N;n++){const i=(rand()*N)|0,b=i*6;
+      const dE=2*s[i]*(s[nb[b]]+s[nb[b+1]]+s[nb[b+2]]+s[nb[b+3]]+s[nb[b+4]]+s[nb[b+5]]);
+      if(dE<=0||rand()<Math.exp(-dE/T))s[i]=-s[i];}
+  }
+  mag(){let m=0;for(let i=0;i<this.N;i++)m+=this.s[i];return m/this.N}
+  energy(){let e=0;const {s,nb,N}=this;for(let i=0;i<N;i++){const b=i*6;e-=s[i]*(s[nb[b]]+s[nb[b+2]]+s[nb[b+4]])}return e/N}
+}
+
+/* ------------------------------------------------ 1. live lattice */
+const lat=document.getElementById('lat'),lctx=lat.getContext('2d'),trace=document.getElementById('trace'),tctx=trace.getContext('2d');
+let sim=null,paused=false,hist=[],algo='wolff';
+function rgb(hex){const h=hex.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
+function newSim(L,mode){
+  sim=new Ising3D(L,(Math.random()*1e9)|0);
+  if(mode==='cold')sim.order();else{sim.randomize();for(let i=0;i<40;i++)sim.sweepWolff(parseFloat(document.getElementById('T').value))}
+  lat.width=L;lat.height=L;hist=[];
+}
+function drawLat(){
+  const L=sim.L,z=L>>1,img=lctx.createImageData(L,L),up=rgb(css('--up')||'#0e4a84'),dn=rgb(css('--down')||'#e8eef6'),hl=rgb(css('--hl')||'#eb6834');
+  const mark=new Uint8Array(L*L),g=sim.mag()>=0?1:-1; // show spins relative to the majority so whole-cluster flips do not flicker
+  if(algo==='wolff'){for(let k=0;k<sim.nflip;k++){const i=sim.flipped[k];if(((i/(L*L))|0)===z)mark[i%(L*L)]=1}}
+  for(let y=0;y<L;y++)for(let x=0;x<L;x++){
+    const idx=x+L*(y+L*z),c=sim.s[idx]*g>0?up:dn,o=(x+L*y)*4,m=mark[x+L*y]?0.8:0;
+    img.data[o]=c[0]*(1-m)+hl[0]*m;img.data[o+1]=c[1]*(1-m)+hl[1]*m;img.data[o+2]=c[2]*(1-m)+hl[2]*m;img.data[o+3]=255;
+  }
+  lctx.putImageData(img,0,0);
+}
+function drawTrace(){
+  const w=trace.width=trace.clientWidth*devicePixelRatio,h=trace.height=trace.clientHeight*devicePixelRatio;
+  tctx.clearRect(0,0,w,h);tctx.strokeStyle=css('--rule');tctx.lineWidth=1;tctx.strokeRect(.5,.5,w-1,h-1);
+  tctx.fillStyle=css('--muted');tctx.font=(11*devicePixelRatio)+'px system-ui';tctx.fillText('|m| over time',6*devicePixelRatio,14*devicePixelRatio);
+  if(hist.length<2)return;tctx.strokeStyle=css('--blue');tctx.lineWidth=1.6*devicePixelRatio;tctx.beginPath();
+  hist.forEach((v,i)=>{const x=i/(299)*w,y=h-4-(h-8)*v;i?tctx.lineTo(x,y):tctx.moveTo(x,y)});tctx.stroke();
+}
+function step(){
+  if(!paused&&sim){
+    const T=parseFloat(document.getElementById('T').value);
+    if(algo==='wolff'){sim.wolff(T)}else sim.metro(T);
+    const m=Math.abs(sim.mag());hist.push(m);if(hist.length>300)hist.shift();
+    document.getElementById('rm').textContent=m.toFixed(3);
+    document.getElementById('re').textContent=sim.energy().toFixed(3);
+    document.getElementById('rc').textContent=algo==='wolff'?sim.nflip+' spins ('+(100*sim.nflip/sim.N).toFixed(0)+' %)':'–';
+    drawLat();drawTrace();
+  }
+  setTimeout(()=>requestAnimationFrame(step),algo==='wolff'?110:45);
+}
+document.getElementById('T').oninput=e=>{document.getElementById('Tval').textContent=(+e.target.value).toFixed(2)};
+document.getElementById('algo').onchange=e=>{algo=e.target.value};
+document.getElementById('Lsel').onchange=e=>newSim(+e.target.value,'hot');
+document.getElementById('cold').onclick=()=>newSim(sim.L,'cold');
+document.getElementById('hot').onclick=()=>newSim(sim.L,'hot');
+document.getElementById('play').onclick=e=>{paused=!paused;e.target.textContent=paused?'Resume':'Pause'};
+
+/* ------------------------------------------------ 2. live experiment */
+const SIZES=[6,8,12], TEMPS=[];for(let t=4.20;t<=4.801;t+=0.05)TEMPS.push(+t.toFixed(2));
+let data=null,obs='resc',running=false;
+const plot=document.getElementById('plot'),pctx=plot.getContext('2d');
+const SC=['#5b2d85','#2f7ba0','#6dbf3a'];
+function Q(L,pt,o){ // pt={m1,m2,m4}
+  if(o==='raw')return pt.m1;
+  if(o==='resc')return pt.m1*Math.pow(L,BETA_NU);
+  return 1-pt.m4/(3*pt.m2*pt.m2);
+}
+async function runExperiment(){
+  if(running)return;running=true;
+  const btn=document.getElementById('run'),prog=document.getElementById('prog');btn.disabled=true;
+  const nm=+document.getElementById('nm').value;data={};SIZES.forEach(L=>data[L]=new Array(TEMPS.length).fill(null));
+  const total=SIZES.length*TEMPS.length;let done=0;
+  for(const L of SIZES){
+    const s=new Ising3D(L,1000+L);s.order();
+    for(let it=0;it<TEMPS.length;it++){
+      const T=TEMPS[it];
+      for(let i=0;i<150;i++)s.sweepWolff(T);
+      let m1=0,m2=0,m4=0;
+      for(let i=0;i<nm;i++){s.sweepWolff(T);const m=Math.abs(s.mag());const q=m*m;m1+=m;m2+=q;m4+=q*q}
+      data[L][it]={m1:m1/nm,m2:m2/nm,m4:m4/nm};
+      done++;prog.textContent='Running… '+Math.round(100*done/total)+' %';drawPlot();
+      await new Promise(r=>setTimeout(r,0));
+    }
+  }
+  prog.textContent='Done.';btn.disabled=false;running=false;setLevelRange();drawPlot();
+}
+function series(L,o){return TEMPS.map((T,i)=>data&&data[L][i]?[T,Q(L,data[L][i],o)]:null)}
+function crossLevel(ser,q){ // curves decreasing in T
+  for(let i=0;i<ser.length-1;i++){const a=ser[i],b=ser[i+1];if(!a||!b)continue;
+    if((a[1]-q)*(b[1]-q)<=0&&a[1]!==b[1])return a[0]+(q-a[1])/(b[1]-a[1])*(b[0]-a[0]);}
+  return null;
+}
+function crossSizes(s1,s2){
+  const r=[];for(let i=0;i<s1.length-1;i++){
+    if(!s1[i]||!s2[i]||!s1[i+1]||!s2[i+1])continue;
+    const d0=s1[i][1]-s2[i][1],d1=s1[i+1][1]-s2[i+1][1];
+    if(d0*d1<0)r.push(s1[i][0]+d0/(d0-d1)*(s1[i+1][0]-s1[i][0]));}
+  return r;
+}
+function range(o){
+  let lo=1e9,hi=-1e9;
+  SIZES.forEach(L=>series(L,o).forEach(p=>{if(p){lo=Math.min(lo,p[1]);hi=Math.max(hi,p[1])}}));
+  return [lo,hi];
+}
+function setLevelRange(){updateLevelText()}
+function levelValue(){
+  if(!data){return null}
+  // level slider spans central 80% of the data range
+  const [lo,hi]=range(obs);const f=+document.getElementById('lvl').value/100;
+  return lo+(hi-lo)*(0.1+0.8*f);
+}
+function updateLevelText(){const q=levelValue();document.getElementById('lvlv').textContent=q==null?'–':q.toFixed(3)}
+function drawPlot(){
+  const W=plot.width=plot.clientWidth*devicePixelRatio,H=plot.height=plot.clientHeight*devicePixelRatio,dpr=devicePixelRatio;
+  pctx.clearRect(0,0,W,H);
+  const ml=58*dpr,mr=16*dpr,mt=18*dpr,mb=44*dpr,x0=4.2,x1=4.8;
+  let lo=0,hi=1;if(data&&data[SIZES[0]].some(Boolean)){[lo,hi]=range(obs);const pad=(hi-lo)*0.08;lo-=pad;hi+=pad;if(hi-lo<1e-6){hi=lo+1}}
+  else{ if(obs==='raw'){lo=0;hi=1}else if(obs==='resc'){lo=0;hi=2}else{lo=0;hi=0.7}}
+  const X=t=>ml+(t-x0)/(x1-x0)*(W-ml-mr),Y=v=>H-mb-(v-lo)/(hi-lo)*(H-mt-mb);
+  pctx.font=(12*dpr)+'px system-ui';pctx.textAlign='center';
+  pctx.strokeStyle=css('--rule');pctx.fillStyle=css('--muted');pctx.lineWidth=1*dpr;
+  for(let t=4.2;t<=4.801;t+=0.1){pctx.beginPath();pctx.moveTo(X(t),mt);pctx.lineTo(X(t),H-mb);pctx.stroke();pctx.fillText(t.toFixed(1),X(t),H-mb+16*dpr)}
+  pctx.textAlign='right';
+  for(let k=0;k<=4;k++){const v=lo+(hi-lo)*k/4;pctx.beginPath();pctx.moveTo(ml,Y(v));pctx.lineTo(W-mr,Y(v));pctx.stroke();pctx.fillText(v.toFixed(2),ml-6*dpr,Y(v)+4*dpr)}
+  pctx.textAlign='center';pctx.fillText('Temperature T',(ml+W-mr)/2,H-6*dpr);
+  // Tc
+  pctx.setLineDash([6*dpr,5*dpr]);pctx.strokeStyle=css('--ink');pctx.lineWidth=1.6*dpr;pctx.beginPath();pctx.moveTo(X(TC),mt);pctx.lineTo(X(TC),H-mb);pctx.stroke();pctx.setLineDash([]);
+  pctx.fillStyle=css('--ink');pctx.textAlign='left';pctx.fillText('true T_c = 4.5115',X(TC)+6*dpr,mt+12*dpr);
+  if(!data||!data[SIZES[0]].some(Boolean)){pctx.fillStyle=css('--muted');pctx.textAlign='center';pctx.font=(Math.min(15,W/dpr/26)*dpr)+'px system-ui';pctx.fillText('Press “Run simulation”',(ml+W-mr)/2,(mt+H-mb)/2-8*dpr);pctx.fillText('to generate the curves',(ml+W-mr)/2,(mt+H-mb)/2+14*dpr);updateRes();return}
+  const q=levelValue();
+  if(q!=null){pctx.strokeStyle=css('--fails');pctx.lineWidth=1.4*dpr;pctx.beginPath();pctx.moveTo(ml,Y(q));pctx.lineTo(W-mr,Y(q));pctx.stroke()}
+  SIZES.forEach((L,k)=>{
+    const ser=series(L,obs),col=SC[k];
+    pctx.strokeStyle=col;pctx.lineWidth=2.4*dpr;pctx.beginPath();let st=false;
+    ser.forEach(p=>{if(!p)return;st?pctx.lineTo(X(p[0]),Y(p[1])):pctx.moveTo(X(p[0]),Y(p[1]));st=true});pctx.stroke();
+    ser.forEach(p=>{if(!p)return;pctx.fillStyle=col;pctx.beginPath();pctx.arc(X(p[0]),Y(p[1]),3*dpr,0,7);pctx.fill()});
+    if(q!=null){const t=crossLevel(ser,q);if(t!=null){pctx.fillStyle='#fff';pctx.strokeStyle=css('--fails');pctx.lineWidth=2.2*dpr;pctx.beginPath();pctx.arc(X(t),Y(q),6*dpr,0,7);pctx.fill();pctx.stroke()}}
+  });
+  // legend
+  pctx.textAlign='left';pctx.font=(13*dpr)+'px system-ui';
+  SIZES.forEach((L,k)=>{const x=W-mr-120*dpr,y=mt+(k+1)*18*dpr+18*dpr;pctx.fillStyle=SC[k];pctx.fillRect(x,y-8*dpr,18*dpr,3*dpr);pctx.fillStyle=css('--ink');pctx.fillText('L = '+L,x+24*dpr,y-3*dpr)});
+  // size crossings
+  const sx=[];
+  for(let k=0;k<SIZES.length-1;k++){crossSizes(series(SIZES[k],obs),series(SIZES[k+1],obs)).forEach(t=>sx.push([t,SIZES[k],SIZES[k+1]]))}
+  sx.forEach(([t])=>{const ys=SIZES.map(L=>{const s=series(L,obs);const i=TEMPS.findIndex((T,j)=>T<=t&&TEMPS[j+1]>=t);if(i<0||!s[i]||!s[i+1])return null;const f=(t-TEMPS[i])/(TEMPS[i+1]-TEMPS[i]);return s[i][1]+f*(s[i+1][1]-s[i][1])}).filter(v=>v!=null);
+    if(ys.length){const y=ys.reduce((a,b)=>a+b)/ys.length;pctx.fillStyle=css('--works');pctx.beginPath();pctx.moveTo(X(t),Y(y)-9*dpr);pctx.lineTo(X(t)+6*dpr,Y(y));pctx.lineTo(X(t),Y(y)+9*dpr);pctx.lineTo(X(t)-6*dpr,Y(y));pctx.closePath();pctx.fill()}});
+  updateRes(sx,q);
+}
+function updateRes(sx,q){
+  const el=document.getElementById('res');
+  if(!data||!data[SIZES[0]].some(Boolean)){el.innerHTML='';return}
+  const names={raw:'⟨|m|⟩',resc:'⟨|m|⟩·L<sup>β/ν</sup>',binder:'U₄'};
+  let h='<table><tr><th>Reading</th><th>Result</th><th>Compared with T<sub>c</sub> = 4.5115</th></tr>';
+  const lv=SIZES.map(L=>crossLevel(series(L,obs),q));
+  const ok=lv.filter(v=>v!=null);
+  h+='<tr><td><span class="bad">◯ Level crossing</span> at '+names[obs]+' = '+(q==null?'–':q.toFixed(3))+'</td><td>'+SIZES.map((L,i)=>'L='+L+': '+(lv[i]==null?'–':lv[i].toFixed(3))).join(' · ')+'</td><td>'+(ok.length>1?'spread '+(Math.max(...ok)-Math.min(...ok)).toFixed(3)+' between sizes':'')+'</td></tr>';
+  h+='<tr><td><span class="good">◆ Size crossing</span></td><td>'+(sx&&sx.length?sx.map(([t,a,b])=>'('+a+','+b+'): '+t.toFixed(3)).join(' · '):'no crossing in this range')+'</td><td>'+(sx&&sx.length?'offsets '+sx.map(([t])=>(t-TC>=0?'+':'')+(t-TC).toFixed(3)).join(', '):'')+'</td></tr></table>';
+  el.innerHTML=h;
+}
+document.getElementById('run').onclick=runExperiment;
+document.getElementById('lvl').oninput=()=>{updateLevelText();drawPlot()};
+document.querySelectorAll('#obs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#obs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');obs=b.dataset.o;updateLevelText();drawPlot()});
+
+/* ------------------------------------------------ 5. dot plots (thesis numbers) */
+function dotplot(id,rows,xmin,xmax,ref,ticks,fmt){
+  const W=520,rh=26,top=26,H=top+rows.length*rh+34,ml=170,mr=14;
+  const X=v=>ml+(v-xmin)/(xmax-xmin)*(W-ml-mr);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" role="img">';
+  ticks.forEach(t=>{s+='<line x1="'+X(t)+'" x2="'+X(t)+'" y1="'+(top-8)+'" y2="'+(H-26)+'" stroke="var(--rule)"/><text x="'+X(t)+'" y="'+(H-10)+'" text-anchor="middle" font-size="12" fill="var(--muted)">'+fmt(t)+'</text>'});
+  s+='<line x1="'+X(ref)+'" x2="'+X(ref)+'" y1="'+(top-10)+'" y2="'+(H-26)+'" stroke="var(--ink)" stroke-dasharray="5 4" stroke-width="1.6"/>';
+  rows.forEach((r,i)=>{const y=top+i*rh+rh/2-4,c=r.c==='w'?'var(--works)':r.c==='f'?'var(--fails)':r.c==='p'?'#8a5bc0':'var(--muted)';
+    s+='<text x="'+(ml-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="12.5" fill="var(--ink)">'+r.n+'</text>';
+    s+='<line x1="'+X(r.v-r.e)+'" x2="'+X(r.v+r.e)+'" y1="'+y+'" y2="'+y+'" stroke="'+c+'" stroke-width="2.4"/><circle cx="'+X(r.v)+'" cy="'+y+'" r="4.6" fill="'+c+'"/>'});
+  return s+'</svg>';
+}
+function drawDots(){
+  document.getElementById('dotIsing').innerHTML=dotplot('i',[
+    {n:'Per-size CNN, A',v:4.395,e:.019,c:'f'},{n:'Per-size CNN, B',v:4.415,e:.024,c:'f'},{n:'Per-size CNN, C',v:4.438,e:.007,c:'f'},
+    {n:'Shared CNN, A',v:4.359,e:.051,c:'f'},{n:'Shared CNN, B',v:4.261,e:.034,c:'f'},{n:'Shared CNN, C',v:4.471,e:.010,c:'f'},
+    {n:'Scale-invariant, A',v:4.510,e:.003,c:'w'},{n:'Scale-invariant, B',v:4.508,e:.005,c:'w'},{n:'Scale-invariant, C',v:4.514,e:.005,c:'w'}],
+    4.2,4.6,TC,[4.2,4.3,4.4,4.5,4.6],v=>v.toFixed(1));
+  document.getElementById('dotSK').innerHTML=dotplot('s',[
+    {n:'Overlap only, A',v:1.005,e:.020,c:'w'},{n:'Overlap only, B',v:1.015,e:.021,c:'w'},{n:'Overlap only, C',v:.970,e:.025,c:'w'},
+    {n:'Overlap + GNN, A',v:.911,e:.026,c:'p'},{n:'Overlap + GNN, B',v:.941,e:.021,c:'p'},{n:'Overlap + GNN, C',v:1.012,e:.023,c:'p'},
+    {n:'Single replica, A',v:1.198,e:.083,c:'f'},{n:'Single replica, B',v:.956,e:.083,c:'f'},{n:'Single replica, C',v:1.322,e:.025,c:'f'}],
+    0.8,1.4,1,[.8,.9,1,1.1,1.2,1.3,1.4],v=>v.toFixed(1));
+}
+function redrawAll(){drawDots();drawPlot();drawTrace();if(sim)drawLat()}
+window.addEventListener('resize',()=>{drawPlot();drawTrace()});
+
+/* ------------------------------------------------ boot */
+newSim(16,'hot');drawDots();drawPlot();updateLevelText();requestAnimationFrame(step);
+})();
+</script>
+</body>
+</html>
